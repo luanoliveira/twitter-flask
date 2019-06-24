@@ -1,6 +1,6 @@
 from app import app, db, login_manager
 from app.models.tables import User, Post
-from flask import render_template, flash, redirect, url_for
+from flask import render_template, flash, redirect, url_for, request
 from flask_login import login_user, logout_user
 
 from app.models.forms import LoginForm
@@ -23,22 +23,27 @@ def index():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    form = LoginForm()
+    form = LoginForm(request.form)
     
-    if form.validate_on_submit():
-        user = User.query.filter_by(username=form.username.data).first()
+    if request.method == 'POST':
+        if form.validate():
+            user = User.query.filter_by(username=form.username.data).first()
 
-        if user and user.password == form.password.data:
-            login_user(user)
-            flash('Logged in successfully.')
-            return redirect(url_for('index'))
+            if user and user.password == form.password.data:
+                login_user(user, form.remember_me.data)
+                flash(dict(type='success', message='Login realizado com sucesso'))
+                return redirect(url_for('index'))
+            else:
+                flash(dict(type='danger', message='Login inválido'))
         else:
-            flash('Invalid Login.')
-    else:
-        print(form.errors)
+            flash(dict(type='danger', message='Dados inválidos'))
 
     return render_template('login.html',
         form=form)
+
+@app.route('/singup')
+def singup():
+    return render_template('singup.html')
 
 @app.route('/logout')
 def logout():
